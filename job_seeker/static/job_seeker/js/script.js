@@ -199,9 +199,12 @@
     // Setting the auto Progress
     function updateProgress(percentage) {
       const progressCircle = document.querySelector('.progress-circle');
+      if (!progressCircle) {
+        return;
+      }
       progressCircle.style.setProperty('--percentage', percentage);
       progressCircle.querySelector('span').textContent = percentage + '%';
-  } 
+  }
   setTimeout(() => {
       updateProgress(50);
   }, 2000);

@@ -180,11 +180,16 @@ document.addEventListener('DOMContentLoaded', (event) => {
       
 
     
-    update_profile_info.addEventListener('click', handle_update_profile_info_button_click);
+    if (update_profile_info) {
+      update_profile_info.addEventListener('click', handle_update_profile_info_button_click);
+    }
 
-    
-    update_qualification.addEventListener('click',handle_update_qualification_button_click);
-    update_address_info.addEventListener('click', handle_update_address_info_button_click);
+    if (update_qualification) {
+      update_qualification.addEventListener('click', handle_update_qualification_button_click);
+    }
+    if (update_address_info) {
+      update_address_info.addEventListener('click', handle_update_address_info_button_click);
+    }
 
 
  });

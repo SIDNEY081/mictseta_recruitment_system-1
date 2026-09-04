@@ -441,51 +441,42 @@
   <script>
 
 
-    var ctxSales = document.getElementById('salesChart').getContext('2d');
-    var salesChart = new Chart(ctxSales, {
-      type: 'line',
-      data: {
-        labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
-        datasets: [{
-          label: 'Jobs vs Applicants',
-          data: [65, 59, 80, 81, 56, 55, 40],
-          backgroundColor: 'rgba(75, 192, 192, 0.2)',
-          borderColor: 'rgba(75, 192, 192, 1)',
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        scales: {
-          y: {
-            beginAtZero: true
+    var salesChartCanvas = document.getElementById('salesChart');
+    if (salesChartCanvas) {
+      var ctxSales = salesChartCanvas.getContext('2d');
+      var salesChart = new Chart(ctxSales, {
+        type: 'line',
+        data: {
+          labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+          datasets: [{
+            label: 'Jobs vs Applicants',
+            data: [65, 59, 80, 81, 56, 55, 40],
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
           }
         }
-      }
-    });
+      });
+    }
 
     
 
-    // Task Manager JavaScript
-    document.getElementById('taskForm').addEventListener('submit', function(event) {
-      event.preventDefault();
-      var taskInput = document.getElementById('taskInput');
-      var taskList = document.getElementById('taskList');
-
-      if (taskInput.value) {
-        var newTask = document.createElement('li');
-        newTask.className = 'list-group-item';
-        newTask.textContent = taskInput.value;
-        taskList.appendChild(newTask);
-        taskInput.value = '';
-      }
-    });
-
     // Sidebar toggle
-    document.getElementById('sidebarCollapse').addEventListener('click', function () {
-      document.querySelector('.sidebar').classList.toggle('active');
-      document.querySelector('.main-content').classList.toggle('active');
-    });
+    var sidebarCollapseBtn = document.getElementById('sidebarCollapse');
+    if (sidebarCollapseBtn) {
+      sidebarCollapseBtn.addEventListener('click', function () {
+        document.querySelector('.sidebar').classList.toggle('active');
+        document.querySelector('.main-content').classList.toggle('active');
+      });
+    }
   </script>
 
 
