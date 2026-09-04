@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',
     'corsheaders',
+    'storages',
     'dbbackup',
     'authenticate',
     'home',
@@ -64,7 +65,7 @@ INSTALLED_APPS = [
     'job_seeker',
     'task_manager',
     'easyaudit',
-
+    
 ]
 
 MIDDLEWARE = [
@@ -229,6 +230,42 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # In dev, let WhiteNoise fall back to serving straight from STATICFILES_DIRS
 # so nothing breaks if collectstatic hasn't been run locally.
 WHITENOISE_USE_FINDERS = DEBUG
+
+# User-uploaded files (profile photos, ID/passport documents).
+#
+# When AWS_* credentials are present (set them on the host - Render, etc.)
+# uploads go to S3-compatible object storage instead of local disk, which
+# is required for them to survive restarts/redeploys on a host with
+# ephemeral disk (e.g. Render's free tier). Works with real AWS S3 or any
+# S3-compatible provider (Cloudflare R2, Backblaze B2, DigitalOcean
+# Spaces, MinIO, ...) by pointing AWS_S3_ENDPOINT_URL at it.
+#
+# With no AWS_* env vars set (the local dev default), Django falls back to
+# its normal local FileSystemStorage - existing behaviour is unchanged.
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
+
+if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY and AWS_STORAGE_BUCKET_NAME:
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'us-east-1')
+    # Only set for non-AWS S3-compatible providers (R2, Spaces, B2, MinIO).
+    # Leave unset for real AWS S3.
+    AWS_S3_ENDPOINT_URL = os.environ.get('AWS_S3_ENDPOINT_URL') or None
+    # Optional CDN/custom domain in front of the bucket, e.g. a
+    # CloudFront distribution or R2's own public bucket domain.
+    AWS_S3_CUSTOM_DOMAIN = os.environ.get('AWS_S3_CUSTOM_DOMAIN') or None
+    # No per-object ACLs: several S3-compatible providers (R2 included)
+    # reject ACL headers outright. Bucket-level access controls this
+    # instead of object ACLs.
+    AWS_DEFAULT_ACL = None
+    AWS_S3_FILE_OVERWRITE = False
+    # ID/passport documents are sensitive - default to a private bucket
+    # with short-lived signed URLs rather than permanently public files.
+    # Set AWS_QUERYSTRING_AUTH=False only if the bucket is intentionally
+    # public (e.g. you only ever store non-sensitive images in it).
+    AWS_QUERYSTRING_AUTH = os.environ.get('AWS_QUERYSTRING_AUTH', 'True') == 'True'
+    AWS_QUERYSTRING_EXPIRE = int(os.environ.get('AWS_QUERYSTRING_EXPIRE', '3600'))
 
 
 # Default primary key field type
