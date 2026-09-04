@@ -8,7 +8,7 @@
     .content-section {
         padding: 0px;
     }
-    
+
     .form-group input, .form-group select {
         border-radius: 0;
     }
@@ -24,21 +24,31 @@
           <li class="breadcrumb-item active" aria-current="page">Supporting Documents</li>
         </ol>
       </nav>
-    <form class="mt-4">
-        <div class="form-group">
-            <label for="drivers-license">Driver's License</label>
-            <input type="file" class="form-control-file" id="drivers-license" name="drivers-license">
-        </div>
-        <div class="form-group">
-            <label for="id">ID</label>
-            <input type="file" class="form-control-file" id="id" name="id">
-        </div>
-        <div class="form-group">
-            <label for="passport">Passport</label>
-            <input type="file" class="form-control-file" id="passport" name="passport">
-        </div>
-        <button type="submit" class="btn btn-primary">Upload Documents</button>
-    </form>
+
+    <p>Accepted file types: PDF, PNG, JPG. You can upload one, two, or all three documents at once.</p>
+
+    <div class="form-group">
+        <label for="drivers-license">Driver's License</label>
+        <input type="file" class="form-control-file" id="drivers-license" accept=".pdf,.png,.jpg,.jpeg">
+        {% if request.user.supportingdocuments.drivers_license %}
+            <div><small>Current file: <a href="{{ request.user.supportingdocuments.drivers_license.url }}" target="_blank">View uploaded document</a></small></div>
+        {% endif %}
+    </div>
+    <div class="form-group">
+        <label for="id">ID</label>
+        <input type="file" class="form-control-file" id="id" accept=".pdf,.png,.jpg,.jpeg">
+        {% if request.user.supportingdocuments.id_document %}
+            <div><small>Current file: <a href="{{ request.user.supportingdocuments.id_document.url }}" target="_blank">View uploaded document</a></small></div>
+        {% endif %}
+    </div>
+    <div class="form-group">
+        <label for="passport">Passport</label>
+        <input type="file" class="form-control-file" id="passport" accept=".pdf,.png,.jpg,.jpeg">
+        {% if request.user.supportingdocuments.passport %}
+            <div><small>Current file: <a href="{{ request.user.supportingdocuments.passport.url }}" target="_blank">View uploaded document</a></small></div>
+        {% endif %}
+    </div>
+    <button type="button" class="btn btn-primary" onclick="handle_upload_supporting_documents_button_click()">Upload Documents</button>
 </div>
 
 {% endblock %}

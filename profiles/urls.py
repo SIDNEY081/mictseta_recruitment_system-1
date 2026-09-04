@@ -10,8 +10,12 @@ urlpatterns = [
     path('update/address_information/', views.update_address_info, name='update_address_info'),
     path('update/language_information/', views.update_language, name='update_language'),
     path('update/skill_information/', views.update_skill, name='update_skill'),
+    path('update/soft_skill_information/', views.update_soft_skill, name='update_soft_skill'),
+    path('update/working_experience/', views.update_working_experience, name='update_working_experience'),
+    path('update/reference_information/', views.update_reference, name='update_reference'),
 
     path('update/upload_profile_image/', views.upload_profile_image, name='upload_profile_image'),
+    path('update/supporting_documents/', views.upload_supporting_documents, name='upload_supporting_documents'),
     path('update/update_staff/', views.update_staff, name='update_staff'),
     path('add/add_staff/', views.add_staff, name='add_staff'),
     path('add/leave/', views.leave, name='leave'),

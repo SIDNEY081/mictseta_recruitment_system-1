@@ -3,11 +3,11 @@ from django.views.decorators.csrf import csrf_protect,ensure_csrf_cookie
 import json
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
-from .forms import UpdateQualificationForm, UpdateAddressInformationForm, UpdateProfileInformationForm, ImageUploadForm, AddStaffForm, UpdateStaffForm, LeaveForm, UpdateLanguageForm,UpdateSkillsForm
+from .forms import UpdateQualificationForm, UpdateAddressInformationForm, UpdateProfileInformationForm, ImageUploadForm, AddStaffForm, UpdateStaffForm, LeaveForm, UpdateLanguageForm,UpdateSkillsForm, UpdateWorkingExperienceForm, UpdateReferenceForm, UpdateSoftSkillsForm
 
 from django.contrib.auth.models import User
 from authenticate.data_validator import ValidateIdNumber
-from .models import Profile, AddressInformation, ProfileImage, StaffProfile, Shift, Leave, Attendance, Qualification,Language,ComputerSkills
+from .models import Profile, AddressInformation, ProfileImage, StaffProfile, Shift, Leave, Attendance, Qualification,Language,ComputerSkills, WorkingExpereince, Reference, SupportingDocuments, SoftSkills
 from django.db.utils import IntegrityError
 from PIL import Image as PilImage
 import os
@@ -37,20 +37,25 @@ def update_user_profile(request):
             except Exception :
                 return JsonResponse({'errors':'Supply a json oject: check documentation for more info ', 'status':'error'})
             print(json_data)
+            existing_profile = request.user.profile
             data = {
-                'linkedin_profile' : json_data.get('linkedin_profile'),
-                'personal_website' : json_data.get('personal_website'),
-                'first_name' : json_data.get('first_name'),
-                'last_name' : json_data.get('last_name'),
-                'email' : json_data.get('email'),
-                'phone' : json_data.get('phone'),
-                'idnumber': json_data.get('idnumber'),
-                'maritial_status' : json_data.get('maritial_status'),
-                'race' : json_data.get('race'),
-                'disability' : json_data.get('disability'),
+                'linkedin_profile' : json_data.get('linkedin_profile', existing_profile.linkedin_profile),
+                'personal_website' : json_data.get('personal_website', existing_profile.personal_website),
+                'first_name' : json_data.get('first_name', request.user.first_name),
+                'last_name' : json_data.get('last_name', request.user.last_name),
+                'email' : json_data.get('email', request.user.email),
+                'phone' : json_data.get('phone', existing_profile.phone),
+                'idnumber': json_data.get('idnumber', existing_profile.idnumber),
+                # Not every profile-editing page shows every field (e.g. the staff
+                # profile page has no marital status/race/disability inputs) -
+                # fields the client didn't submit keep their current DB value
+                # instead of failing validation or being blanked out.
+                'maritial_status' : json_data.get('maritial_status') or existing_profile.maritial_status,
+                'race' : json_data.get('race') or existing_profile.race,
+                'disability' : json_data.get('disability') or existing_profile.disability,
                 'r_username' : f'{request.user.username}',
                 'r_email' : f'{request.user.email}',
-                'r_phone' : 'False',
+                'r_phone' : existing_profile.phone,
                 # 'r_idnum' : f'{request.user.profile.idnumber}'
             }
             shallow_copy = data.copy()
@@ -127,7 +132,7 @@ def update_qualification(request):
                          return JsonResponse({'errors':{ "Qualification" : ['it Already exists']}, 'status':'error'}, status=404)
                     qualification = Qualification.objects.create(user=request.user,highest_qualification=data['highest_qualification'],field_of_study=data['field_of_study'],institution=data['institution'],year_obtained=data['year_obtained'],grade=data['grade'],status=data['status'])
                     qualification.save()
-                    return JsonResponse({"message":"Added qualification information success"})
+                    return JsonResponse({"message":"Added qualification information success", "status":"success"}, status=201)
                 except Exception as e: 
                     return JsonResponse({'errors':f'{e}', 'status':'error'}, status=404)
             else:
@@ -147,18 +152,32 @@ def update_language(request):
                 return JsonResponse({'errors':'Supply a json oject: check documentation for more info ', 'status':'error'})
             data = {
                 'language' : json_data.get('language'),
-                'proficiency' : json_data.get('proficiency'),
+                'reading_proficiency' : json_data.get('reading_proficiency'),
+                'writing_proficiency' : json_data.get('writing_proficiency'),
+                'speaking_proficiency' : json_data.get('speaking_proficiency'),
                 }
-   
+
             language_data_form =  UpdateLanguageForm(data)
             if language_data_form.is_valid() : #and address_data_form.is_valid():
                 try:
-                    exists = Language.objects.filter(user=request.user,language=data['language'],proficiency=data['proficiency']).exists()
+                    exists = Language.objects.filter(
+                        user=request.user,
+                        language=data['language'],
+                        reading_proficiency=data['reading_proficiency'],
+                        writing_proficiency=data['writing_proficiency'],
+                        speaking_proficiency=data['speaking_proficiency'],
+                    ).exists()
                     if exists:
                          return JsonResponse({'errors':{ "Languge" : ['it Already exists']}, 'status':'error'}, status=404)
-                    language = Language.objects.create(user=request.user,language=data['language'],proficiency=data['proficiency'])
+                    language = Language.objects.create(
+                        user=request.user,
+                        language=data['language'],
+                        reading_proficiency=data['reading_proficiency'],
+                        writing_proficiency=data['writing_proficiency'],
+                        speaking_proficiency=data['speaking_proficiency'],
+                    )
                     language.save()
-                    return JsonResponse({"message":"Added Language information success"})
+                    return JsonResponse({"message":"Added Language information success", "status":"success"}, status=201)
                 except Exception as e: 
                     return JsonResponse({'errors':f'{e}', 'status':'error'}, status=404)
             else:
@@ -189,7 +208,7 @@ def update_skill(request):
                          return JsonResponse({'errors':{ "Skill" : ['it Already exists']}, 'status':'error'}, status=404)
                     skill = ComputerSkills.objects.create(user=request.user,skill=data['skill'],level=data['level'])
                     skill.save()
-                    return JsonResponse({"message":"Added Skill information success"})
+                    return JsonResponse({"message":"Added Skill information success", "status":"success"}, status=201)
                 except Exception as e: 
                     return JsonResponse({'errors':f'{e}', 'status':'error'}, status=404)
             else:
@@ -198,6 +217,112 @@ def update_skill(request):
         else:
             return JsonResponse({'errors': 'Forbidden 403', 'status':'error'}, status=400)
     else:       
+        return JsonResponse({'errors': { "authentication" : ['you are required to log in ']}, 'status':'error'}, status=403)
+
+
+@csrf_protect
+def update_working_experience(request):
+    if request.user.is_authenticated:
+        if request.method == 'POST':
+            try:
+                json_data = json.loads(request.body)
+            except Exception :
+                return JsonResponse({'errors':'Supply a json oject: check documentation for more info ', 'status':'error'})
+            data = {
+                'job_title' : json_data.get('job_title'),
+                'company' : json_data.get('company'),
+                'location' : json_data.get('location'),
+                'start_date' : json_data.get('start_date'),
+                'end_date' : json_data.get('end_date') or None,
+                'years_of_expreince' : json_data.get('years_of_expreince'),
+                }
+
+            experience_form = UpdateWorkingExperienceForm(data)
+            if experience_form.is_valid() :
+                try:
+                    experience = WorkingExpereince.objects.create(
+                        user=request.user,
+                        job_title=data['job_title'],
+                        company=data['company'],
+                        location=data['location'],
+                        start_date=data['start_date'],
+                        end_date=data['end_date'] or '',
+                        years_of_expreince=data['years_of_expreince'],
+                    )
+                    experience.save()
+                    return JsonResponse({"message":"Added working experience success", "status":"success"}, status=201)
+                except Exception as e:
+                    return JsonResponse({'errors':f'{e}', 'status':'error'}, status=404)
+            else:
+                return JsonResponse({"errors":experience_form.errors, "status":"error"}, status=400)
+        else:
+            return JsonResponse({'errors': 'Forbidden 403', 'status':'error'}, status=400)
+    else:
+        return JsonResponse({'errors': { "authentication" : ['you are required to log in ']}, 'status':'error'}, status=403)
+
+
+@csrf_protect
+def update_reference(request):
+    if request.user.is_authenticated:
+        if request.method == 'POST':
+            try:
+                json_data = json.loads(request.body)
+            except Exception :
+                return JsonResponse({'errors':'Supply a json oject: check documentation for more info ', 'status':'error'})
+            data = {
+                'name' : json_data.get('name'),
+                'contact' : json_data.get('contact'),
+                'position' : json_data.get('position'),
+                }
+
+            reference_form = UpdateReferenceForm(data)
+            if reference_form.is_valid() :
+                try:
+                    exists = Reference.objects.filter(user=request.user, name=data['name'], contact=data['contact']).exists()
+                    if exists:
+                        return JsonResponse({'errors':{ "Reference" : ['it Already exists']}, 'status':'error'}, status=404)
+                    reference = Reference.objects.create(user=request.user, name=data['name'], contact=data['contact'], position=data['position'])
+                    reference.save()
+                    return JsonResponse({"message":"Added reference success", "status":"success"}, status=201)
+                except Exception as e:
+                    return JsonResponse({'errors':f'{e}', 'status':'error'}, status=404)
+            else:
+                return JsonResponse({"errors":reference_form.errors, "status":"error"}, status=400)
+        else:
+            return JsonResponse({'errors': 'Forbidden 403', 'status':'error'}, status=400)
+    else:
+        return JsonResponse({'errors': { "authentication" : ['you are required to log in ']}, 'status':'error'}, status=403)
+
+
+@csrf_protect
+def update_soft_skill(request):
+    if request.user.is_authenticated:
+        if request.method == 'POST':
+            try:
+                json_data = json.loads(request.body)
+            except Exception :
+                return JsonResponse({'errors':'Supply a json oject: check documentation for more info ', 'status':'error'})
+            data = {
+                'skill' : json_data.get('skill'),
+                'level' : json_data.get('level'),
+                }
+
+            skill_data_form = UpdateSoftSkillsForm(data)
+            if skill_data_form.is_valid() :
+                try:
+                    exists = SoftSkills.objects.filter(user=request.user,skill=data['skill'],level=data['level']).exists()
+                    if exists:
+                         return JsonResponse({'errors':{ "Skill" : ['it Already exists']}, 'status':'error'}, status=404)
+                    skill = SoftSkills.objects.create(user=request.user,skill=data['skill'],level=data['level'])
+                    skill.save()
+                    return JsonResponse({"message":"Added Soft Skill information success", "status":"success"}, status=201)
+                except Exception as e:
+                    return JsonResponse({'errors':f'{e}', 'status':'error'}, status=404)
+            else:
+                return JsonResponse({"errors":skill_data_form.errors, "status":"error"}, status=400)
+        else:
+            return JsonResponse({'errors': 'Forbidden 403', 'status':'error'}, status=400)
+    else:
         return JsonResponse({'errors': { "authentication" : ['you are required to log in ']}, 'status':'error'}, status=403)
 
 
@@ -214,17 +339,31 @@ def update_address_info(request):
                 'street_address_line1' : json_data.get('street_address_line1'),
                 'city'  : json_data.get('city'),
                 'province' : json_data.get('province'),
-                'postal_code' : json_data.get('postal_code')
-                
+                'postal_code' : json_data.get('postal_code'),
+                'residential_street_address' : json_data.get('residential_street_address', ''),
+                'residential_city' : json_data.get('residential_city', ''),
+                'residential_province' : json_data.get('residential_province', ''),
+                'residential_postal_code' : json_data.get('residential_postal_code', ''),
                 }
-            
+
             address_data_form =  UpdateAddressInformationForm(address_data)
             if address_data_form.is_valid() : #and address_data_form.is_valid():
                 try:
-            
-                    address_info = AddressInformation.objects.create(user=request.user, street_address_line=address_data['street_address_line'], street_address_line1=address_data['street_address_line1'], city=address_data['city'], province=address_data['province'], postal_code=address_data['postal_code'] )
-                    address_info.save()     
-                    return JsonResponse({"message":"update personal information success"})
+
+                    address_info = AddressInformation.objects.create(
+                        user=request.user,
+                        street_address_line=address_data['street_address_line'],
+                        street_address_line1=address_data['street_address_line1'],
+                        city=address_data['city'],
+                        province=address_data['province'],
+                        postal_code=address_data['postal_code'],
+                        residential_street_address=address_data['residential_street_address'],
+                        residential_city=address_data['residential_city'],
+                        residential_province=address_data['residential_province'],
+                        residential_postal_code=address_data['residential_postal_code'],
+                    )
+                    address_info.save()
+                    return JsonResponse({"message":"update personal information success", "status":"success"}, status=201)
                 except IntegrityError:
                     address_information = AddressInformation.objects.get(user_id=request.user.id)
                     print(address_information)
@@ -233,7 +372,11 @@ def update_address_info(request):
                     address_information.city = address_data['city']
                     address_information.province = address_data['province']
                     address_information.postal_code = address_data['postal_code']
-                   
+                    address_information.residential_street_address = address_data['residential_street_address']
+                    address_information.residential_city = address_data['residential_city']
+                    address_information.residential_province = address_data['residential_province']
+                    address_information.residential_postal_code = address_data['residential_postal_code']
+
                     address_information.save()
                     print('=========done=========')
                     return JsonResponse({"message":"update personal information success", "status":"success"}, status=200)
@@ -306,6 +449,43 @@ def upload_profile_image(request):
         else:
             return JsonResponse({'errors': form.errors, 'status': 'error'}, status=400)
     return JsonResponse({'errors': 'Invalid request method', 'status': 'error'}, status=400)
+
+
+SUPPORTING_DOCUMENT_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg'}
+
+@csrf_protect
+@login_required(login_url='render_auth_page')
+def upload_supporting_documents(request):
+    if request.method != 'POST':
+        return JsonResponse({'errors': 'Invalid request method', 'status': 'error'}, status=400)
+
+    # Each of the three documents is optional per request - a user can
+    # upload just one at a time, or all three together.
+    field_map = {
+        'drivers_license': 'drivers-license',
+        'id_document': 'id',
+        'passport': 'passport',
+    }
+    uploaded_any = False
+    for model_field, form_field in field_map.items():
+        uploaded_file = request.FILES.get(form_field)
+        if not uploaded_file:
+            continue
+        extension = uploaded_file.name.rsplit('.', 1)[-1].lower() if '.' in uploaded_file.name else ''
+        if extension not in SUPPORTING_DOCUMENT_EXTENSIONS:
+            return JsonResponse({'errors': {form_field: [f'{uploaded_file.name} is not an allowed file type (pdf, png, jpg, jpeg only)']}, 'status': 'error'}, status=400)
+        uploaded_any = True
+
+    if not uploaded_any:
+        return JsonResponse({'errors': 'No file selected', 'status': 'error'}, status=400)
+
+    documents, _ = SupportingDocuments.objects.get_or_create(user=request.user)
+    for model_field, form_field in field_map.items():
+        uploaded_file = request.FILES.get(form_field)
+        if uploaded_file:
+            setattr(documents, model_field, uploaded_file)
+    documents.save()
+    return JsonResponse({'message': 'Documents uploaded successfully', 'status': 'success'}, status=201)
 
 #==================================================================================================================================
 

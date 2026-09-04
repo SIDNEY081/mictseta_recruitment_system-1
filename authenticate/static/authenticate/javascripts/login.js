@@ -113,11 +113,15 @@ function handle_sign_up_button_click() {
           showFlashMessage("An unknown error occurred", "danger");
         }
       } else if (data.status === "success") {
-        window.location.href = "/auth/authenticates/";
         showFlashMessage(data.message, "success");
+        setTimeout(function () {
+          window.location.href = "/auth/authenticates/";
+        }, 1500);
       } else if (data.status === "warning") {
-        window.location.href = "/auth/authenticates/";
         showFlashMessage(data.message, "warning");
+        setTimeout(function () {
+          window.location.href = "/auth/authenticates/";
+        }, 1500);
       }
     })
     .catch((error) => {

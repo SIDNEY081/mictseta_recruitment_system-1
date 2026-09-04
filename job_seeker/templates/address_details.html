@@ -11,7 +11,7 @@
         </ol>
     </nav>
     
-    <form method="post">
+    <form method="post" onsubmit="return false;">
         {% csrf_token %}
         <div class="row">
             <!-- Residential Address Section -->
@@ -19,11 +19,11 @@
                 <h4>Residential Address (Optional)</h4>
                 <div class="mb-3">
                     <label for="residential_street_address" class="form-label">Street Address</label>
-                    <input type="text" class="form-control" id="residential_street_address" name="residential_street_address">
+                    <input type="text" class="form-control" id="residential_street_address" name="residential_street_address" value="{{request.user.addressinformation.residential_street_address}}">
                 </div>
                 <div class="mb-3">
                     <label for="residential_city" class="form-label">City</label>
-                    <input type="text" class="form-control" id="residential_city" name="residential_city">
+                    <input type="text" class="form-control" id="residential_city" name="residential_city" value="{{request.user.addressinformation.residential_city}}">
                 </div>
                 <div class="mb-3">
                     <label for="residential_province" class="form-label">Province</label>
@@ -42,7 +42,7 @@
                 </div>
                 <div class="mb-3">
                     <label for="residential_postal_code" class="form-label">Postal Code</label>
-                    <input type="text" class="form-control" id="residential_postal_code" name="residential_postal_code">
+                    <input type="text" class="form-control" id="residential_postal_code" name="residential_postal_code" value="{{request.user.addressinformation.residential_postal_code}}">
                 </div>
             </div>
 
@@ -51,11 +51,15 @@
                 <h4>Postal Address (Required)</h4>
                 <div class="mb-3">
                     <label for="postal_street_address" class="form-label">Street Address / P.O. Box</label>
-                    <input type="text" class="form-control" id="postal_street_address" name="postal_street_address" required>
+                    <input type="text" class="form-control" id="postal_street_address" name="postal_street_address" value="{{request.user.addressinformation.street_address_line}}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="postal_street_address2" class="form-label">Street Address Line 2 (optional)</label>
+                    <input type="text" class="form-control" id="postal_street_address2" name="postal_street_address2" value="{{request.user.addressinformation.street_address_line1}}">
                 </div>
                 <div class="mb-3">
                     <label for="postal_city" class="form-label">City</label>
-                    <input list="postal_city_list" class="form-control" id="postal_city" name="postal_city" required>
+                    <input list="postal_city_list" class="form-control" id="postal_city" name="postal_city" value="{{request.user.addressinformation.city}}" required>
                     <datalist id="postal_city_list">
                         <!-- Add all postal cities in South Africa here -->
                         <option value="Cape Town"></option>
@@ -67,8 +71,7 @@
                 </div>
                 <div class="mb-3">
                     <label for="postal_province" class="form-label">Province</label>
-                    <label for="residential_province" class="form-label">Province</label>
-                    <select class="form-control" id="postal_province" name="residential_province">
+                    <select class="form-control" id="postal_province" name="postal_province">
                         <option value="">Select Province</option>
                         <option value="Eastern Cape">Eastern Cape</option>
                         <option value="Free State">Free State</option>
@@ -83,12 +86,27 @@
                 </div>
                 <div class="mb-3">
                     <label for="postal_postal_code" class="form-label">Postal Code</label>
-                    <input type="text" class="form-control" id="postal_postal_code" name="postal_postal_code" required>
+                    <input type="text" class="form-control" id="postal_postal_code" name="postal_postal_code" value="{{request.user.addressinformation.postal_code}}" required>
                 </div>
             </div>
         </div>
 
-        <button type="submit" class="btn btn-primary">Save Address</button>
+        <button type="button" onclick="handle_update_address_info_button_click()" class="btn btn-primary">Save Address</button>
     </form>
+
+    <script>
+        // Pre-select the saved province values (can't be done via the
+        // value="" attribute on a <select>).
+        document.addEventListener('DOMContentLoaded', function () {
+            var residentialProvince = "{{request.user.addressinformation.residential_province|default:''}}";
+            var postalProvince = "{{request.user.addressinformation.province|default:''}}";
+            if (residentialProvince) {
+                document.getElementById('residential_province').value = residentialProvince;
+            }
+            if (postalProvince) {
+                document.getElementById('postal_province').value = postalProvince;
+            }
+        });
+    </script>
 </div>
 {% endblock %}

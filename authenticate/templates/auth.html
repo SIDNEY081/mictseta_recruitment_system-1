@@ -48,8 +48,18 @@
         align-items: center;
     }
     
-    .form-container { 
+    .form-container {
         width: 100%;
+    }
+
+    #flash-message-container {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 9999;
+        width: 90%;
+        max-width: 500px;
     }
     
     h1 {
@@ -235,13 +245,6 @@
         passwordInput.type = type;
     });
 
-    function handle_sign_in_button_click() {
-        // Handle sign-in functionality here
-    }
-
-    function handle_sign_up_button_click() {
-        // Handle sign-up functionality here
-    }
 </script>
 
 {% endblock %}

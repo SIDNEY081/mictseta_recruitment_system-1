@@ -39,7 +39,9 @@ class Qualification(models.Model):
 class Language(models.Model):
 	user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='languages')
 	language = models.CharField(max_length=225)
-	proficiency = models.CharField(max_length=225)
+	reading_proficiency = models.CharField(max_length=225)
+	writing_proficiency = models.CharField(max_length=225)
+	speaking_proficiency = models.CharField(max_length=225)
 	def __str__(self):
 		return f"{self.user.email} Language and proficiency information"
 
@@ -68,16 +70,39 @@ class WorkingExpereince(models.Model):
 	def __str__(self):
 		return f"{self.user.email} Working Expereince information"
 
+class Reference(models.Model):
+	user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='references')
+	name = models.CharField(max_length=225)
+	contact = models.CharField(max_length=225)
+	position = models.CharField(max_length=225)
+	def __str__(self):
+		return f"{self.user.email} Reference"
+
 class AddressInformation(models.Model):
 	user = models.OneToOneField(User, on_delete=models.CASCADE)
+	# Postal address (required on the job-seeker Address Details page)
 	street_address_line = models.CharField(max_length=225,null=True )
 	street_address_line1 = models.CharField(max_length=225,null=True )
 	city = models.CharField(max_length=225,null=True )
 	province = models.CharField(max_length=225,null=True)
 	postal_code = models.CharField(max_length=6,null=True )
-	
+	# Residential address (optional, distinct from the postal address above)
+	residential_street_address = models.CharField(max_length=225, null=True, blank=True)
+	residential_city = models.CharField(max_length=225, null=True, blank=True)
+	residential_province = models.CharField(max_length=225, null=True, blank=True)
+	residential_postal_code = models.CharField(max_length=6, null=True, blank=True)
+
 	def __str__(self):
 		return f"{self.user.email} Address Information"
+
+class SupportingDocuments(models.Model):
+	user = models.OneToOneField(User, on_delete=models.CASCADE)
+	drivers_license = models.FileField(upload_to='static/profiles/documents/', null=True, blank=True)
+	id_document = models.FileField(upload_to='static/profiles/documents/', null=True, blank=True)
+	passport = models.FileField(upload_to='static/profiles/documents/', null=True, blank=True)
+	uploaded_at = models.DateTimeField(auto_now=True)
+	def __str__(self):
+		return f"{self.user.email} Supporting Documents"
 
 
 class ProfileImage(models.Model):

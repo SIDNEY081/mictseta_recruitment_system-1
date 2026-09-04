@@ -67,27 +67,22 @@ document.addEventListener('DOMContentLoaded', (event) => {
    const update_profile_info = document.getElementById('update_profile_info');
 
     function handle_update_profile_info_button_click() {
-        const first_name = document.getElementById("first_name").value;
-        const last_name = document.getElementById("last_name").value;
-        const username = document.getElementById("username").value;
-        const email = document.getElementById("email").value;
-        const idnumber = document.getElementById("idnumber").value;
-        const phone = document.getElementById("phone").value;
-        const maritial_status = document.getElementById("maritial_status").value;
-        const race = document.getElementById("race").value;
-        const disability = document.getElementById("disability").value;
+        // This page's "Profile Information" form only has username/first_name/
+        // last_name/email/phone/idnumber - other profile fields (marital
+        // status, race, disability, linkedin, website) live on other pages,
+        // so read defensively and only send what this form actually has.
+        function fieldValue(id) {
+            const el = document.getElementById(id);
+            return el ? el.value : undefined;
+        }
 
         const data2 = {
-            username : username,
-            first_name : first_name,
-            last_name : last_name,
-            email : email,
-            phone :  phone ,  
-            idnumber : idnumber,
-            maritial_status : maritial_status,
-            race : race,
-            disability : disability,
-           
+            username : fieldValue("username"),
+            first_name : fieldValue("first_name"),
+            last_name : fieldValue("last_name"),
+            email : fieldValue("email"),
+            phone : fieldValue("phone"),
+            idnumber : fieldValue("idnumber"),
         };
        
         fetch("http://127.0.0.1:8000/profile/update/profile_information/", {
