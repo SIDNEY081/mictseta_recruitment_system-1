@@ -21,12 +21,26 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-+5d78i2gower*d@*0r3cl-q^r&@n=y8(m!kau8-4)q0-rw073$'
+# In production (Render), set SECRET_KEY as an environment variable instead
+# of relying on this fallback.
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY',
+    'django-insecure-+5d78i2gower*d@*0r3cl-q^r&@n=y8(m!kau8-4)q0-rw073$',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['058a-102-64-32-230.ngrok-free.app','127.0.0.1', '192.168.1.195']
+ALLOWED_HOSTS = ['058a-102-64-32-230.ngrok-free.app', '127.0.0.1', '192.168.1.195']
+
+# Render sets this automatically to the service's *.onrender.com hostname.
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+# Comma-separated list of any other hosts to allow (e.g. a custom domain).
+_extra_hosts = os.environ.get('ALLOWED_HOSTS', '')
+ALLOWED_HOSTS.extend(h.strip() for h in _extra_hosts.split(',') if h.strip())
 
 
 # Application definition
@@ -50,11 +64,12 @@ INSTALLED_APPS = [
     'job_seeker',
     'task_manager',
     'easyaudit',
-    
+
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -94,9 +109,10 @@ CORS_ALLOW_METHODS = [
 CSRF_TRUSTED_ORIGINS = [
     'https://058a-102-64-32-230.ngrok-free.app',
     'http://192.168.1.195:8000',
-     'http://127.0.0.1:8000'
-
- ]
+    'http://127.0.0.1:8000',
+]
+if RENDER_EXTERNAL_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
 
 # # Ensure CSRF_USE_SESSIONS is True to use CSRF tokens stored in session
 # CSRF_USE_SESSIONS = True
@@ -151,6 +167,14 @@ DATABASES = {
     }
 
 }
+
+# In production (Render), DATABASE_URL is set to the managed Postgres
+# instance's connection string - use it when present. Local dev keeps
+# using the sqlite3 file above.
+_database_url = os.environ.get('DATABASE_URL')
+if _database_url:
+    import dj_database_url
+    DATABASES['default'] = dj_database_url.config(default=_database_url, conn_max_age=600)
 from datetime import datetime
 DBBACKUP_STORAGE = 'django.core.files.storage.FileSystemStorage'
 DBBACKUP_STORAGE_OPTIONS = {'location' : f'{BASE_DIR}/backup/database/'}
@@ -198,6 +222,13 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
+# collectstatic (run during the Render build) writes the production bundle
+# here; WhiteNoise serves it from there.
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# In dev, let WhiteNoise fall back to serving straight from STATICFILES_DIRS
+# so nothing breaks if collectstatic hasn't been run locally.
+WHITENOISE_USE_FINDERS = DEBUG
 
 
 # Default primary key field type
